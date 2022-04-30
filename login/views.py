@@ -13,6 +13,7 @@ from django.db.models import Sum
 from django.contrib.auth import logout as auth_logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+import sqlite3
 
 
 
@@ -156,24 +157,32 @@ def signupUser(request):
 @csrf_exempt
 def dashboard(request):
     if request.user.is_authenticated:
-        minutesPlayed = LevelPlayedScore.objects.aggregate(Sum('duration'))["duration__sum"]
-        livesPlayed = LevelPlayedScore.objects.aggregate(Sum('lives'))["lives__sum"]
-        scorePlayed = LevelPlayedScore.objects.aggregate(Sum('score'))["score__sum"]
-        levelScore = TopUserScores.objects.get(userId = 1)
-
-        datos = {
-            "minutesPlayed": minutesPlayed,
-            "livesPlayed": livesPlayed,
-            "scorePlayed": scorePlayed,
-            "level1": levelScore.scoreLevel1,
-            "level2": levelScore.scoreLevel2,
-            "score3": levelScore.scoreLevel3,
-            "score4": levelScore.scoreLevel4,
-
-        }
-        print(datos)
         
-        return render(request, 'dashboard2.0.html', {"datos": datos })
+        dataBase = sqlite3.connect("db.sqlite3")
+        curr = dataBase.cursor()
+        query1 = '''SELECT nivel, minutos FROM tarea_bueno'''
+        rows1 = curr.execute(query1)
+        data = [['Nivel', 'Tiempo']]
+        for x in rows1:
+            data.append([ x[0], x[1]])
+        #print(data)
+        
+        
+        query2 = '''SELECT nivel, mistakes FROM tarea_bueno'''
+        rows2 = curr.execute(query2)
+        errores = [['Nivel', 'Errores']]
+        for x in rows2:
+            errores.append([ x[0], x[1]])
+        
+        
+        query3 = '''SELECT nivel, totalScore FROM tarea_bueno'''
+        rows3 = curr.execute(query3)
+        puntaje = [['Nivel', 'Puntaje']]
+        for x in rows3:
+            puntaje.append([ x[0], x[1]])
+        #print(data)
+
+        return render(request, 'newdashboard.html', {'datos':data, 'errores': errores, 'puntaje':puntaje})
     else:
         return redirect('login')
 
